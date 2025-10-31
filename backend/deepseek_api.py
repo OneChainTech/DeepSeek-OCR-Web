@@ -68,6 +68,11 @@ def call_deepseek_ocr(
                 ],
             }
         ],
+        "temperature": 0.0,
+        "max_tokens": 8000,
+        "extra_body": {
+            "skip_special_tokens": False,
+        },
     }
 
     endpoint = base_url.rstrip("/") + "/chat/completions"
