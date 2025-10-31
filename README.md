@@ -70,68 +70,24 @@ bash start.sh
 
 #### Method 2: Manual Installation and Running
 
-##### Step 1: Model Weight Download
-First, you need to download the DeepSeek-OCR model weights, which can be obtained from **Hugging Face** or **ModelScope**. The following example uses **ModelScope**:
+##### Step 1: Configure DeepSeek API Credentials
+Create a `.env` file in the project root directory and fill in the following fields:
 
-```bash
-pip install modelscope
-mkdir ./deepseek-ocr
-modelscope download --model deepseek-ai/DeepSeek-OCR --local_dir ./deepseek-ocr
 ```
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1
+DEEPSEEK_MODEL_ID=deepseek-ai/DeepSeek-OCR
+```
+
+> `DEEPSEEK_BASE_URL` and `DEEPSEEK_MODEL_ID` keep their default values unless you are using a customized endpoint/model.
 
 ##### Step 2: Runtime Environment Setup
-Download the official project package
+Create and activate a Python environment, then install dependencies:
 
 ```bash
-git clone https://github.com/deepseek-ai/DeepSeek-OCR.git
-```
-
-Create a virtual environment to install model runtime dependencies
-
-```bash
-conda create -n deepseek-ocr python=3.12.9 -y
-conda activate deepseek-ocr
-```
-
-Install Jupyter and corresponding kernel
-
-```bash
-conda install jupyterlab
-conda install ipykernel
-python -m ipykernel install --user --name dsocr --display-name "Python (dsocr)"
-```
-
-Install PyTorch related components
-
-```bash
-pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu118
-```
-
-Install DeepSeek-OCR officially recommended vLLM version ([v0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl](https://github.com/vllm-project/vllm/releases/download/v0.8.5/vllm-0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl))
-```Bash
-pip install ./packages/vllm-0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl
-```
-
-Install project basic dependencies
-
-```Bash
-cd ./DeepSeek-OCR/
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-If dependency conflicts appear during installation as shown in the image, you can ignore them as they won't affect actual operation.
-
-<img src="assets\3b6eecd322d1ac8aa411e53fd8eefc2f.png"/>
-
-Install flash-attn acceleration library.
-
-```Bash
-pip install flash-attn==2.7.3 --no-build-isolation
-```
-
-Create a `.env` file in the project root directory and enter the model runtime address, for example:
-```
-MODEL_PATH=/root/autodl-tmp/deepseek-ocr
 ```
 
 ##### Step 3: Start Backend Service

@@ -1,14 +1,10 @@
 #!/bin/bash
 ###############################################################################
-# DeepSeek-OCR 一键启动脚本
+# DeepSeek-OCR 一键启动脚本（API 版）
 # 支持：Python 后端 (FastAPI) + Vite 前端
-# 作者：九天Hector
 ###############################################################################
 
 set -e
-
-# ✅ 确保 Node.js 路径加载
-export PATH=/usr/local/lib/nodejs/node-v22.21.0-linux-x64/bin:$PATH
 
 # 彩色输出
 GREEN="\033[1;32m"
@@ -20,17 +16,15 @@ echo -e "${GREEN}============================================================${R
 echo -e "🚀 ${YELLOW}正在启动 DeepSeek-OCR 项目...${RESET}"
 echo -e "${GREEN}============================================================${RESET}"
 
-# 初始化 Conda 环境
-if ! command -v conda &> /dev/null; then
-    echo -e "${RED}❌ 未检测到 Conda，请先安装 Miniconda 或 Anaconda。${RESET}"
+# 1️⃣ 激活虚拟环境
+if [ -d ".venv" ]; then
+    echo -e "${YELLOW}>>> Step 1. 激活 .venv 虚拟环境${RESET}"
+    # shellcheck disable=SC1091
+    source .venv/bin/activate
+else
+    echo -e "${RED}❌ 未检测到 .venv 虚拟环境，请先运行 install.sh${RESET}"
     exit 1
 fi
-
-source $(conda info --base)/etc/profile.d/conda.sh
-
-# 1️⃣ 激活虚拟环境
-echo -e "${YELLOW}>>> Step 1. 激活 Conda 环境 deepseek-ocr${RESET}"
-conda activate deepseek-ocr || { echo -e "${RED}❌ 无法激活 deepseek-ocr 环境。${RESET}"; exit 1; }
 
 # 2️⃣ 启动后端服务
 BACKEND_PORT=8002
@@ -40,11 +34,9 @@ if lsof -i:$BACKEND_PORT >/dev/null 2>&1; then
 fi
 
 echo -e "${YELLOW}>>> Step 2. 启动后端服务 (Uvicorn)...${RESET}"
-cd backend || cd .
-nohup uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT} --reload > ../backend.log 2>&1 &
+nohup uvicorn backend.main:app --host 0.0.0.0 --port ${BACKEND_PORT} --reload > backend.log 2>&1 &
 BACK_PID=$!
 echo -e "${GREEN}✅ 后端已启动 (PID: $BACK_PID)，日志写入 backend.log${RESET}"
-cd ..
 
 # 3️⃣ 启动前端服务
 FRONTEND_PORT=3000

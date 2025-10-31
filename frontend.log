@@ -1,0 +1,20 @@
+
+> Modern Web Interface Design@0.1.0 dev
+> vite --host --port 3000
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+  VITE v6.3.5  ready in 548 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://172.20.10.7:3000/
+  ➜  Network: http://26.26.26.1:3000/
+2:02:47 PM [vite] (client) hmr update /src/App.tsx
+2:15:50 PM [vite] (client) hmr update /src/App.tsx
+2:15:55 PM [vite] (client) page reload index.html
+2:19:56 PM [vite] (client) hmr update /src/App.tsx
+2:19:56 PM [vite] (client) page reload index.html
+2:27:22 PM [vite] (client) page reload index.html
+2:30:17 PM [vite] (client) hmr update /src/App.tsx
+2:30:31 PM [vite] (client) hmr update /src/App.tsx
+2:34:42 PM [vite] (client) hmr update /src/App.tsx

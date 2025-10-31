@@ -72,67 +72,24 @@ bash start.sh
 
 #### 方法二、手动安装并运行
 
-##### 步骤 1：模型权重下载
-首先需要下载 DeepSeek-OCR 模型权重，可从 **Hugging Face** 或 **魔搭社区（ModelScope）** 获取。以下以 **ModelScope** 为例：
+##### 步骤 1：配置 DeepSeek API
+在项目根目录下创建 `.env` 文件，并填写以下字段：
 
-```bash
-pip install modelscope
-mkdir ./deepseek-ocr
-modelscope download --model deepseek-ai/DeepSeek-OCR --local_dir ./deepseek-ocr
 ```
+DEEPSEEK_API_KEY=你的API密钥
+DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1
+DEEPSEEK_MODEL_ID=deepseek-ai/DeepSeek-OCR
+```
+
+> 除非使用自建代理或自定义模型，一般保持默认的 `DEEPSEEK_BASE_URL` 与 `DEEPSEEK_MODEL_ID` 即可。
 
 ##### 步骤 2：运行环境搭建
-下载官方项目包
+创建并激活 Python 虚拟环境，安装依赖：
 
 ```bash
-git clone https://github.com/deepseek-ai/DeepSeek-OCR.git
-```
-
-创建虚拟环境来安装模型运行的相关依赖
-
-```bash
-conda create -n deepseek-ocr python=3.12.9 -y
-conda activate deepseek-ocr
-```
-
-安装Jupyter及响应的kernel
-
-```bash
-conda install jupyterlab
-conda install ipykernel
-python -m ipykernel install --user --name dsocr --display-name "Python (dsocr)"
-```
-
-安装pytorch相关组件
-
-```bash
-pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu118
-```
-
-​安装DeepSeek-OCR官方推荐使用的vLLM版本([v0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl](https://github.com/vllm-project/vllm/releases/download/v0.8.5/vllm-0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl))
-```Bash
-pip install ./packages/vllm-0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl
-```
-
-安装项目基础依赖
-
-```Bash
-cd ./DeepSeek-OCR/
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-安装过程如果出现了如图所示的依赖冲突，无视即可，不会影响实际运行。
-
-<img src="assets\3b6eecd322d1ac8aa411e53fd8eefc2f.png"/>
-
-安装flash-attn加速库。
-
-```Bash
-pip install flash-attn==2.7.3 --no-build-isolation
-```
-在项目根目录下创建`.env`文件，并输入模型运行地址，例如
-```
-MODEL_PATH=/root/autodl-tmp/deepseek-ocr
 ```
 
 ##### 步骤 3：启动后端服务
@@ -167,4 +124,3 @@ npm run dev
 <div align="center">
 <img src="assets\afe0e4d094987b00012c5129a38ade24.png" width="200" alt="技术交流群二维码">
 <div>
-

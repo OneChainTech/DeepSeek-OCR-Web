@@ -15,7 +15,7 @@ import uuid
 from pathlib import Path
 from typing import Tuple
 
-from config_loader import UPLOAD_DIR, RESULTS_DIR
+from backend.config_loader import UPLOAD_DIR, RESULTS_DIR
 
 
 # ========== Step 1. 文件类型判断 ==========

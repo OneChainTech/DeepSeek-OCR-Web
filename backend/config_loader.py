@@ -2,9 +2,9 @@
 config_loader.py
 ----------------
 该模块负责：
-1. 从 .env 文件中加载模型路径与基本配置；
+1. 从 .env 文件中加载 DeepSeek OCR API 所需配置；
 2. 自动创建 workspace 目录结构（uploads / results / logs）；
-3. 检查配置合法性并输出当前配置状态；
+3. 校验关键配置项并输出当前配置状态；
 4. 提供全局常量供其他模块导入使用。
 """
 
@@ -29,34 +29,37 @@ if not EXAMPLE_ENV_FILE.exists():
     with open(EXAMPLE_ENV_FILE, "w", encoding="utf-8") as f:
         f.write(
             "# DeepSeek-OCR 后端配置文件示例\n"
-            "# 请复制为 .env 并修改 MODEL_PATH 路径。\n\n"
-            "MODEL_PATH=/root/autodl-tmp/deepseek-ocr\n"
-            "DEVICE_ID=0\n"
-            "MAX_CONCURRENCY=10\n"
+            "# 请复制为 .env 并填写下列 API 信息。\n\n"
+            "DEEPSEEK_API_KEY=\n"
+            "DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1\n"
+            "DEEPSEEK_MODEL_ID=deepseek-ai/DeepSeek-OCR\n"
+            "MAX_CONCURRENCY=5\n"
         )
 
 
 # ========== Step 3. 加载 .env 文件 ==========
 if not ENV_FILE.exists():
     print("[⚠️ Warning] 未找到 .env 文件，已创建示例 .env.example。")
-    print("请复制 .env.example → .env 并填写 MODEL_PATH 后重新启动。")
+    print("请复制 .env.example → .env 并填写 DeepSeek API 相关配置后重启服务。")
 
 load_dotenv(ENV_FILE)
 
 
 # ========== Step 4. 读取配置项 ==========
-MODEL_PATH = os.getenv("MODEL_PATH", None)
-DEVICE_ID = os.getenv("DEVICE_ID", "0")
-MAX_CONCURRENCY = int(os.getenv("MAX_CONCURRENCY", "10"))
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.siliconflow.cn/v1")
+DEEPSEEK_MODEL_ID = os.getenv("DEEPSEEK_MODEL_ID", "deepseek-ai/DeepSeek-OCR")
+MAX_CONCURRENCY = int(os.getenv("MAX_CONCURRENCY", "5"))
 
 
-# ========== Step 5. 检查模型路径合法性 ==========
-if MODEL_PATH is None or MODEL_PATH.strip() == "":
-    raise ValueError("❌ 未在 .env 中设置 MODEL_PATH，请填写模型路径后重启服务。")
+# ========== Step 5. 校验配置 ==========
+missing_keys = []
+if not DEEPSEEK_API_KEY:
+    missing_keys.append("DEEPSEEK_API_KEY")
 
-if not Path(MODEL_PATH).exists():
-    print(f"[⚠️ Warning] 指定的模型路径不存在: {MODEL_PATH}")
-    print("请确保已下载 DeepSeek-OCR 模型权重。")
+if missing_keys:
+    joined = ", ".join(missing_keys)
+    raise ValueError(f"❌ 未在 .env 中设置必要的 API 配置，请补充: {joined}")
 
 
 # ========== Step 6. 自动创建工作目录 ==========
@@ -66,21 +69,23 @@ for directory in [WORKSPACE_PATH, UPLOAD_DIR, RESULTS_DIR, LOGS_DIR]:
 
 # ========== Step 7. 调试输出（打印当前有效配置） ==========
 print("=" * 60)
-print("🔧 DeepSeek-OCR 后端配置加载完成")
-print(f"📁 模型路径:      {MODEL_PATH}")
-print(f"🖥️  GPU 设备:     {DEVICE_ID}")
+print("🔧 DeepSeek-OCR API 配置加载完成")
+print(f"🔑 已检测到 API Key: {'是' if DEEPSEEK_API_KEY else '否'}")
+print(f"🌐 Base URL:        {DEEPSEEK_BASE_URL}")
+print(f"🧠 模型 ID:         {DEEPSEEK_MODEL_ID}")
 print(f"⚙️  最大并发任务数: {MAX_CONCURRENCY}")
-print(f"📂 工作区路径:    {WORKSPACE_PATH}")
+print(f"📂 工作区路径:      {WORKSPACE_PATH}")
 print("=" * 60)
 
 
 # ========== Step 8. 导出可供全局调用的常量 ==========
 __all__ = [
-    "MODEL_PATH",
-    "DEVICE_ID",
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_BASE_URL",
+    "DEEPSEEK_MODEL_ID",
     "MAX_CONCURRENCY",
     "WORKSPACE_PATH",
     "UPLOAD_DIR",
     "RESULTS_DIR",
-    "LOGS_DIR"
+    "LOGS_DIR",
 ]

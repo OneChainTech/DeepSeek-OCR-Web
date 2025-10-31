@@ -3,18 +3,8 @@ import { FileUploader } from './components/FileUploader';
 import { PromptInput } from './components/PromptInput';
 import { FileExplorer } from './components/FileExplorer';
 import { FilePreview } from './components/FilePreview';
-import { Button } from './components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './components/ui/dialog';
-import { Gift } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
-import qrCode from 'figma:asset/dea850b023f7f1cbbc3378bbd2cedd67c865d9f2.png';
 import API_CONFIG from './config/api';
 
 interface FileNode {
@@ -35,7 +25,6 @@ export default function App() {
   const [resultDir, setResultDir] = useState<string>('');
   const [parseCompleted, setParseCompleted] = useState(false);
   const [selectedPreviewFile, setSelectedPreviewFile] = useState<any>(null);
-  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
 
   const handleFileChange = async (file: File | null) => {
@@ -145,33 +134,16 @@ export default function App() {
     }
   };
 
-  const handleGetSourceCode = () => {
-    setIsQrDialogOpen(true);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-50">
       <Toaster position="top-right" />
       
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-8 py-4 flex items-center justify-between">
-          <div className="text-teal-700 font-semibold">
-            《大模型Agent开发实战》体验课
-          </div>
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
-            <h1 className="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 font-semibold">
-              DeepSeek OCR识别检测
-            </h1>
-            <span className="text-xs text-gray-500">by 九天Hector</span>
-          </div>
-          <Button
-            onClick={handleGetSourceCode}
-            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md transition-all hover:shadow-lg hover:scale-105 font-semibold cursor-pointer"
-          >
-            <Gift className="mr-2 h-4 w-4" />
-            领取项目源码
-          </Button>
+        <div className="container mx-auto px-8 py-4 flex items-center justify-center">
+          <h1 className="text-center text-2xl text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 font-semibold">
+            DeepSeek OCR
+          </h1>
         </div>
       </header>
 
@@ -222,25 +194,6 @@ export default function App() {
           </div>
         </div>
       </main>
-
-      {/* QR Code Dialog */}
-      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-semibold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-              扫码免费领取项目源码
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-6">
-            <div className="bg-white p-4 rounded-xl shadow-md">
-              <img src={qrCode} alt="QR Code" className="w-64 h-64" />
-            </div>
-            <p className="text-sm text-gray-500 text-center">
-              使用微信扫描二维码即可获取完整项目源码
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

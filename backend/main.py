@@ -13,9 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import Query
 
-from file_manager import save_uploaded_file
-from inference_runner import run_ocr_task, read_task_state
-from config_loader import UPLOAD_DIR, RESULTS_DIR
+from backend.file_manager import save_uploaded_file
+from backend.inference_runner import run_ocr_task, read_task_state
+from backend.config_loader import UPLOAD_DIR, RESULTS_DIR
 
 
 app = FastAPI(title="DeepSeek OCR Backend", version="1.0.0")

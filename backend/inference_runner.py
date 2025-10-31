@@ -5,24 +5,27 @@ DeepSeek OCR 后端核心执行器
 支持：
 - 自动识别 PDF / 图片
 - 实时进度回调
-- 临时覆盖 config.py
 - 任务状态 JSON 持久化
 """
 
+from __future__ import annotations
+
 import json
-import subprocess
-import threading
+from io import BytesIO
 from pathlib import Path
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional, Dict, Any, List, Tuple
 
-from config_loader import MODEL_PATH, LOGS_DIR
-from file_manager import detect_file_type, create_result_dir, list_result_files
+import fitz  # PyMuPDF
+from PIL import Image
 
-# 核心脚本路径
-PROJECT_ROOT = Path(__file__).resolve().parent
-PDF_SCRIPT = PROJECT_ROOT / "run_dpsk_ocr_pdf.py"
-IMAGE_SCRIPT = PROJECT_ROOT / "run_dpsk_ocr_image.py"
-CONFIG_PATH = PROJECT_ROOT / "config.py"
+from backend.config_loader import (
+    DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL_ID,
+    LOGS_DIR,
+)
+from backend.deepseek_api import call_deepseek_ocr, DeepSeekAPIError, detect_mime_type
+from backend.file_manager import detect_file_type, create_result_dir, list_result_files
 
 
 # ====== 任务状态持久化 ======
@@ -45,31 +48,41 @@ def read_task_state(task_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-# ====== 临时写入 config.py ======
-def override_config(model_path: str, input_path: str, output_path: str, prompt: str):
-    """为每个任务动态生成 config.py"""
-    config_lines = [
-        "# Auto-generated config for DeepSeek OCR",
-        "BASE_SIZE = 1024",
-        "IMAGE_SIZE = 640",
-        "CROP_MODE = True",
-        "MIN_CROPS = 2",
-        "MAX_CROPS = 6",
-        "MAX_CONCURRENCY = 10",
-        "NUM_WORKERS = 32",
-        "PRINT_NUM_VIS_TOKENS = False",
-        "SKIP_REPEAT = True",
-        "",
-        f"MODEL_PATH = r'{model_path}'",
-        f"INPUT_PATH = r'{input_path}'",
-        f"OUTPUT_PATH = r'{output_path}'",
-        f'PROMPT = """{prompt}"""',
-        "",
-        "from transformers import AutoTokenizer",
-        "TOKENIZER = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)",
-    ]
-    CONFIG_PATH.write_text("\n".join(config_lines), encoding="utf-8")
-    print(f"✅ 临时覆盖 config.py 成功：{CONFIG_PATH}")
+# ====== 工具方法 ======
+def _convert_pdf_to_images(pdf_path: Path, dpi: int = 144) -> List[bytes]:
+    """
+    将 PDF 每一页渲染为 PNG 格式的字节流。
+    """
+    images: List[bytes] = []
+    doc = fitz.open(pdf_path)
+    zoom = dpi / 72.0
+    matrix = fitz.Matrix(zoom, zoom)
+
+    for page_index in range(doc.page_count):
+        page = doc[page_index]
+        pix = page.get_pixmap(matrix=matrix, alpha=False)
+        images.append(pix.tobytes("png"))
+
+    doc.close()
+    return images
+
+
+def _prepare_image_bytes(image_path: Path) -> Tuple[bytes, str]:
+    """
+    读取图片文件并返回字节流与 MIME 类型。
+    """
+    mime_type = detect_mime_type(str(image_path))
+    data = image_path.read_bytes()
+
+    # 某些情况下 MIME type 猜测失败或返回未知类型，这里统一转换为 PNG
+    if not mime_type.startswith("image/"):
+        with Image.open(BytesIO(data)) as im:
+            buffer = BytesIO()
+            im.save(buffer, format="PNG")
+            data = buffer.getvalue()
+            mime_type = "image/png"
+
+    return data, mime_type
 
 
 # ====== 核心任务执行 ======
@@ -77,7 +90,7 @@ def run_ocr_task(
     input_path: str,
     task_id: str,
     on_progress: Optional[Callable[[int], None]] = None,
-    prompt: str = "<image>\nFree OCR."
+    prompt: str = "<image>\nFree OCR.",
 ) -> Dict[str, Any]:
     """执行 OCR 任务"""
     try:
@@ -85,66 +98,85 @@ def run_ocr_task(
         write_task_state(task_id, {"status": "running", "result_dir": str(result_dir)})
 
         file_type = detect_file_type(input_path)
-        script_path = PDF_SCRIPT if file_type == "pdf" else IMAGE_SCRIPT
-
-        override_config(MODEL_PATH, input_path, str(result_dir), prompt)
-
         print(f"🚀 启动 DeepSeek OCR 任务 ({file_type.upper()})")
-        print(f"📄 使用脚本: {script_path}")
         print(f"📁 输出路径: {result_dir}")
 
-        command = ["python", str(script_path)]
+        pages: List[Tuple[bytes, str]] = []
+        input_file = Path(input_path)
 
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            bufsize=1,
-        )
+        if file_type == "pdf":
+            print("📄 检测到 PDF，开始逐页渲染...")
+            page_images = _convert_pdf_to_images(input_file)
+            pages = [(img, "image/png") for img in page_images]
+        else:
+            print("🖼️ 检测到图片，准备调用 OCR API...")
+            pages.append(_prepare_image_bytes(input_file))
 
-        progress = 0
+        total_pages = len(pages)
+        if total_pages == 0:
+            raise RuntimeError("未生成任何可识别的图片页面。")
 
-        def _read_output():
-            nonlocal progress
-            for line in process.stdout:
-                line = line.strip()
+        markdown_sections: List[str] = []
+        page_output_dir = Path(result_dir) / "pages"
+        page_output_dir.mkdir(parents=True, exist_ok=True)
 
-                # 根据日志关键字推算进度
-                if "loading" in line.lower():
-                    progress = 10
-                elif "pre-processed" in line.lower():
-                    progress = 30
-                elif "generate" in line.lower():
-                    progress = 60
-                elif "save results" in line.lower():
-                    progress = 90
-                elif "result_with_boxes" in line.lower() or "complete" in line.lower():
-                    progress = 100
+        for idx, (image_bytes, mime_type) in enumerate(pages, start=1):
+            print(f"🔍 正在识别第 {idx}/{total_pages} 页 ...")
+            try:
+                content = call_deepseek_ocr(
+                    api_key=DEEPSEEK_API_KEY,
+                    base_url=DEEPSEEK_BASE_URL,
+                    model_id=DEEPSEEK_MODEL_ID,
+                    image_bytes=image_bytes,
+                    mime_type=mime_type,
+                    prompt=prompt,
+                )
+            except DeepSeekAPIError as exc:
+                raise RuntimeError(f"第 {idx} 页识别失败: {exc}") from exc
 
-                # 每次进度更新都写入任务状态文件
-                write_task_state(task_id, {
+            section_header = f"## Page {idx}\n"
+            markdown_sections.append(f"{section_header}\n{content.strip()}\n")
+
+            page_file = page_output_dir / f"page_{idx}.md"
+            page_file.write_text(content.strip() + "\n", encoding="utf-8")
+
+            progress = int(idx / total_pages * 100)
+            write_task_state(
+                task_id,
+                {
                     "status": "running",
                     "result_dir": str(result_dir),
-                    "progress": progress
-                })
+                    "progress": progress,
+                    "current_page": idx,
+                    "total_pages": total_pages,
+                },
+            )
 
-                if on_progress:
-                    on_progress(progress)
+            if on_progress:
+                on_progress(progress)
 
-                print(line)
+        final_markdown = "\n".join(markdown_sections).strip() + "\n"
+        combined_path = Path(result_dir) / "result.md"
+        combined_path.write_text(final_markdown, encoding="utf-8")
 
-        thread = threading.Thread(target=_read_output)
-        thread.start()
-        process.wait()
-        thread.join()
-
-        if process.returncode != 0:
-            write_task_state(task_id, {"status": "error", "message": "DeepSeek OCR 执行失败"})
-            raise RuntimeError("DeepSeek OCR 执行失败")
+        metadata = {
+            "pages": total_pages,
+            "prompt": prompt,
+            "model": DEEPSEEK_MODEL_ID,
+        }
+        metadata_path = Path(result_dir) / "metadata.json"
+        metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
 
         files = list_result_files(result_dir)
-        write_task_state(task_id, {"status": "finished", "result_dir": str(result_dir), "files": files})
+        write_task_state(
+            task_id,
+            {
+                "status": "finished",
+                "result_dir": str(result_dir),
+                "files": files,
+                "progress": 100,
+            },
+        )
 
         print(f"✅ 任务完成：{task_id}")
         return {"status": "finished", "task_id": task_id, "result_dir": str(result_dir), "files": files}
