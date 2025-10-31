@@ -3,29 +3,52 @@
   <span><a href="./README_zh.md">中文</a> | English</span>
 </div>
 
-## ⚡ Project Overview
+## ✨ Overview
 
-This project is a multimodal document parsing tool based on DeepSeek-OCR with React frontend and FastAPI backend.
-![项目图片](assets/项目图片.png)
-This tool can efficiently process PDF documents and images, providing powerful Optical Character Recognition (OCR) capabilities, supporting multi-language text recognition, table parsing, chart analysis, and many other features.
-### Key Features
+DeepSeek-OCR Studio is a document understanding toolkit powered by the DeepSeek-OCR models.  
+It combines a modern React/Vite frontend with a FastAPI backend to deliver accurate OCR, table parsing, chart understanding, and Markdown reconstruction for PDFs and images.
 
-- **Multi-format Document Parsing**: Supports uploading and parsing documents in various formats such as PDF and images
-- **Intelligent OCR Recognition**: Based on the DeepSeek-OCR model, providing high-precision text recognition
-- **Layout Analysis**: Intelligently recognizes document layout structure and accurately extracts content layout
-- **Multi-language Support**: Supports text recognition in multiple languages including Chinese and English
-- **Table & Chart Parsing**: Professional table recognition and chart data extraction functionality
-- **Professional Domain Drawing Recognition**: Supports semantic recognition of various professional domain drawings
-- **Data Visualization**: Supports reverse parsing of data analysis visualization charts
-- **Markdown Conversion**: Converts PDF content to structured Markdown format
+<div align="center">
+  <img src="assets/项目图片.png" width="720" alt="DeepSeek-OCR Studio UI preview" />
+</div>
 
-## 👀 Project Demo
+## 📌 Features
+
+- **Multi-format ingestion** &mdash; Upload PDFs or images (PNG/JPG) and process multi-page files seamlessly.
+- **High-precision OCR** &mdash; Uses DeepSeek-OCR for multilingual text recognition and grounding tags cleanup.
+- **Layout-aware Markdown** &mdash; Converts content into structured Markdown while fixing image paths.
+- **Table & chart extraction** &mdash; Handles tabular data and infers insights from charts or diagrams.
+- **Interactive workspace** &mdash; File explorer, preview pane, and prompt templates for refined control.
+- **Processing telemetry** &mdash; Real-time task polling, deduplicated page merging, and downloadable outputs.
+
+## 🧱 Architecture
+
+- **Frontend** (Vite + React + Tailwind)  
+  Handles uploads, prompt presets, preview rendering, and toast notifications.
+- **Backend** (FastAPI)  
+  Manages uploads, task orchestration, DeepSeek API calls, result caching, and static serving.
+- **DeepSeek API**  
+  Provides OCR inference; responses are cleaned for pagination overlap before being persisted.
+- **Workspace** (`workspace/`)  
+  Persists uploaded files, OCR outputs, logs, and per-task metadata.
+
+```text
+DeepSeek-OCR-Web/
+├── backend/                # FastAPI service, OCR runner, utilities
+├── frontend/               # React application and build scripts
+├── packages/               # Optional offline installers (see below)
+├── start.sh, install.sh    # Helper scripts for automated setup/startup
+├── requirements.txt        # Python runtime dependencies
+└── README.md               # Project documentation
+```
+
+## 🖼️ Demo Gallery
 
 <div align="center">
 
-**PDF Document Parsing - Supports complex content including images and tables**
+**PDF Document Parsing - Handles images, tables, and rich layouts**
 
-<img src="assets/文档解析.gif" width="600" alt="Document Parsing">
+<img src="assets/文档解析.gif" width="600" alt="PDF Document Parsing">
 
 </div>
 
@@ -39,83 +62,102 @@ This tool can efficiently process PDF documents and images, providing powerful O
 
 <div align="center">
 
-| Professional Domain Drawing Recognition<br/>(CAD, Flowcharts, Decorative Drawings) | Data Visualization Chart<br/>Reverse Parsing |
+| Professional CAD / Diagram Understanding | Data Visualization Reverse Parsing |
 |:---:|:---:|
-| <img src="assets/CAD图纸语义解析.gif" width="400" alt="CAD Drawing Semantic Recognition"> | <img src="assets/图表逆向表格.gif" width="400" alt="Data Visualization Chart Reverse Parsing"> |
+| <img src="assets/CAD图纸语义解析.gif" width="400" alt="CAD Semantic Parsing"> | <img src="assets/图表逆向表格.gif" width="400" alt="Chart to Table Reconstruction"> |
 
 </div>
 
-## 🚀 Usage Guide
+## ✅ Requirements
 
-### System Requirements
+- **Operating System**: Linux (recommended for GPU-enabled inference)
+- **GPU**: ≥7 GB VRAM (16–24 GB preferred for large PDFs); RTX 50 series currently unsupported
+- **Python**: 3.10–3.12 (3.10/3.11 recommended)
+- **CUDA**: 11.8 or 12.1/12.2 to match GPU driver and PyTorch build
+- **Node.js**: ≥18.x (needed for the Vite frontend)
+- **DeepSeek API**: Valid API key and reachable base URL
 
-⚠️ **Important Notice**:
-- **Operating System**: Requires running on Linux system
-- **GPU Requirements**: GPU ≥ 7 GB VRAM (16–24 GB recommended for large images/multi-page PDFs)
-- **Compatibility Note**: RTX 50 series GPUs are currently not compatible, please use other GPU models
-- **Python Version**: 3.10–3.12 (3.10/3.11 recommended)
-- **CUDA Version**: 11.8 or 12.1/12.2 (must match GPU driver)
-- **PyTorch**: Requires installing pre-compiled version matching CUDA
-
-### Quick Start
-#### Method 1: One-click Script Startup (Recommended)
-Execute the following script for one-click startup
+## 🚀 Quick Start (One-click Scripts)
 
 ```bash
-# Install model weights and environment dependencies
+# Install model weights and dependencies
 bash install.sh
-# Start services
+
+# Start backend and frontend services
 bash start.sh
 ```
 
-#### Method 2: Manual Installation and Running
+Services are launched with default ports (`backend`: 8002, `frontend`: 3000).  
+Visit `http://localhost:3000` after both services report that they are running.
 
-##### Step 1: Configure DeepSeek API Credentials
-Create a `.env` file in the project root directory and fill in the following fields:
+## 🔧 Manual Setup
 
-```
+### 1. Configure DeepSeek Credentials
+
+Create `.env` in the project root:
+
+```env
 DEEPSEEK_API_KEY=your_api_key
 DEEPSEEK_BASE_URL=https://api.siliconflow.cn/v1
 DEEPSEEK_MODEL_ID=deepseek-ai/DeepSeek-OCR
 ```
 
-> `DEEPSEEK_BASE_URL` and `DEEPSEEK_MODEL_ID` keep their default values unless you are using a customized endpoint/model.
+> Adjust `DEEPSEEK_BASE_URL` or `DEEPSEEK_MODEL_ID` only if you use a custom deployment.
 
-##### Step 2: Runtime Environment Setup
-Create and activate a Python environment, then install dependencies:
+### 2. Backend Environment
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+uvicorn backend.main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
-##### Step 3: Start Backend Service
+Backend endpoints are now available at `http://localhost:8002`.
 
-Start the backend
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8002 --reload
-```
+### 3. Frontend Environment
 
-##### Step 4: Start Frontend Service
-Install frontend dependencies
 ```bash
+cd frontend
 npm install
+npm run dev  # start on http://localhost:3000
 ```
 
-Start the frontend
-```bash
-npm run dev
-```
+## 📂 Output & Logs
 
-After successful startup, access the frontend address in your browser to use the tool.
+- **Uploads**: `workspace/uploads/`
+- **OCR results**: `workspace/results/<task_id>/`
+- **Task states & logs**: `workspace/logs/` (created on demand)
+- **Runtime logs**: `backend.log`, `frontend.log` (safe to delete when troubleshooting is complete)
+
+## 📦 Optional Offline Packages
+
+`packages/` holds artefacts for air-gapped deployments:
+
+- `node-v22.21.0-linux-x64.tar.xz` &mdash; Node.js bundle for Linux hosts without internet access.
+- `vllm-0.8.5+cu118-cp38-abi3-manylinux1_x86_64.whl` &mdash; CUDA 11.8 vLLM wheel for GPU inference.
+
+If your environment can run `npm install` and `pip install` online, you can remove these files.
+
+## 🛠 Troubleshooting
+
+- **“Address already in use” on startup**  
+  Another process occupies the port. Stop existing services (e.g., `pkill -f uvicorn` / `pkill -f node`) or change the port via CLI flags.
+- **Repeated table rows in merged Markdown**  
+  Pagination overlap is automatically trimmed by `_remove_page_overlap` in `backend/inference_runner.py`.  
+  Update to the latest version if you still see duplicates.
+- **Large bundle warning during `npm run build`**  
+  Vite warns when the main bundle exceeds 500 kB. This is expected given the rich UI set; consider code splitting if you customize further.
 
 ## 🙈 Contributing
-We welcome contributions to the project through GitHub PR submissions or issues. We very much welcome any form of contribution, including feature improvements, bug fixes, or documentation optimization.
+
+Contributions via pull requests or GitHub Issues are welcome.  
+Bug fixes, new features, and documentation improvements all help the community.
 
 ## 😎 Technical Communication
-Scan to add our assistant, reply "DeepSeekOCR" to join the technical communication group and exchange learning with other partners.
+
+Scan to add our assistant. Reply “DeepSeekOCR” to join the technical community and chat with other builders.
 
 <div align="center">
-<img src="assets\afe0e4d094987b00012c5129a38ade24.png" width="200" alt="Technical Communication Group QR Code">
-<div>
+  <img src="assets/afe0e4d094987b00012c5129a38ade24.png" width="200" alt="Technical Communication Group QR Code">
+</div>
