@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Folder, FileText, Image, FileType, ChevronRight, ChevronDown, Download } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import API_CONFIG from '../config/api';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;

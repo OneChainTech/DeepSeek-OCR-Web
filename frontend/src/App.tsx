@@ -4,7 +4,7 @@ import { PromptInput } from './components/PromptInput';
 import { FileExplorer } from './components/FileExplorer';
 import { FilePreview } from './components/FilePreview';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import API_CONFIG from './config/api';
 
 interface FileNode {
